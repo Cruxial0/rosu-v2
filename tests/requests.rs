@@ -14,7 +14,7 @@ use rosu_v2::{
         event::EventSort,
         GameMode,
     },
-    prelude::UserBeatmapsetsKind,
+    prelude::{Token, UserBeatmapsetsKind},
     Osu,
 };
 use tokio::sync::{Mutex, MutexGuard};
@@ -57,6 +57,35 @@ impl OsuSingleton {
             let osu = Osu::builder()
                 .client_id(client_id)
                 .client_secret(client_secret)
+                .build()
+                .await
+                .wrap_err("Failed to build osu! client")?;
+
+            if self.inner.set(Mutex::new(osu)).is_err() {
+                eyre::bail!("Failed to set inner cell");
+            }
+        }
+
+        Ok(self.inner.wait().lock().await)
+    }
+
+    async fn get_oauth(&self) -> Result<MutexGuard<'_, Osu>> {
+        let cmp_res = self
+            .initialized
+            .compare_exchange(false, true, SeqCst, SeqCst);
+
+        if cmp_res.is_ok() {
+            tracing_subscriber::fmt()
+                .with_writer(TestWriter::new())
+                .with_env_filter(EnvFilter::builder().parse("rosu_v2=trace,info").unwrap())
+                .init();
+            dotenv().ok();
+
+            let access_token = env::var("OSU_ACCESS_TOKEN")
+                .wrap_err("missing OSU_ACCESS_TOKEN")?;
+
+            let osu = Osu::builder()
+                .with_token(Token::new(&access_token, None), None)
                 .build()
                 .await
                 .wrap_err("Failed to build osu! client")?;
@@ -414,9 +443,8 @@ async fn osu_matches() -> Result<()> {
 }
 
 #[tokio::test]
-#[ignore = "requires OAuth to not throw an error"]
 async fn own_data() -> Result<()> {
-    let user = OSU.get().await?.own_data().mode(GameMode::Taiko).await?;
+    let user = OSU.get_oauth().await?.own_data().mode(GameMode::Taiko).await?;
 
     println!(
         "Received own data showing a last activity of {:?}",
@@ -425,6 +453,7 @@ async fn own_data() -> Result<()> {
 
     Ok(())
 }
+
 
 #[tokio::test]
 async fn performance_rankings() -> Result<()> {

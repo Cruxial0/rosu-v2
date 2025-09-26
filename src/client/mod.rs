@@ -463,8 +463,8 @@ impl Drop for Osu {
 }
 
 pub(crate) struct OsuInner {
-    pub(crate) client_id: u64,
-    pub(crate) client_secret: Box<str>,
+    pub(crate) client_id: Option<u64>,
+    pub(crate) client_secret: Option<Box<str>>,
     pub(crate) http: HyperClient<HttpsConnector<HttpConnector>, Full<Bytes>>,
     pub(crate) timeout: Duration,
     pub(crate) ratelimiter: Arc<RateLimiter>,
@@ -476,6 +476,31 @@ pub(crate) struct OsuInner {
 
 #[cfg(feature = "cache")]
 impl OsuInner {
+    pub(crate) fn new(
+        client_id: Option<u64>,
+        client_secret: Option<String>,
+        http: HyperClient<HttpsConnector<HttpConnector>, Full<Bytes>>,
+        timeout: Duration,
+        ratelimiter: Arc<RateLimiter>,
+        retries: u8
+    ) -> Self {
+        let boxed_secret = match client_secret {
+            Some(x) => Some(x.into_boxed_str()),
+            None => None,
+        };
+
+        Self {
+            client_id,
+            client_secret: boxed_secret,
+            http,
+            timeout,
+            ratelimiter,
+            token: CurrentToken::new(),
+            retries,
+            cache: dashmap::DashMap::new(),
+        }
+    }
+
     pub(crate) fn update_cache(&self, user_id: u32, username: &crate::prelude::Username) {
         let mut name = username.to_owned();
         name.make_ascii_lowercase();
