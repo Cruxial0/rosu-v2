@@ -46,11 +46,9 @@ impl TokenRequestGenerator {
             None => return Err(OsuError::BuilderMissingSecret),
         }
 
-        Ok(
-            Self {
-                body: body.into_bytes(),
-            }
-        )
+        Ok(Self {
+            body: body.into_bytes(),
+        })
     }
 
     fn generate(self) -> OsuResult<HyperRequest<Full<Bytes>>> {

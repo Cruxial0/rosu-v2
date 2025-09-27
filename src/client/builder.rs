@@ -83,7 +83,7 @@ impl OsuBuilder {
             http,
             self.timeout,
             Arc::new(ratelimiter),
-            self.retries
+            self.retries,
         ));
 
         #[cfg(feature = "metrics")]

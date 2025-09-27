@@ -482,21 +482,17 @@ impl OsuInner {
         http: HyperClient<HttpsConnector<HttpConnector>, Full<Bytes>>,
         timeout: Duration,
         ratelimiter: Arc<RateLimiter>,
-        retries: u8
+        retries: u8,
     ) -> Self {
-        let boxed_secret = match client_secret {
-            Some(x) => Some(x.into_boxed_str()),
-            None => None,
-        };
-
         Self {
             client_id,
-            client_secret: boxed_secret,
+            client_secret: client_secret.map(String::into_boxed_str),
             http,
             timeout,
             ratelimiter,
             token: CurrentToken::new(),
             retries,
+            #[cfg(feature = "cache")]
             cache: dashmap::DashMap::new(),
         }
     }
