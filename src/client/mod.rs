@@ -496,6 +496,7 @@ impl OsuInner {
         }
     }
 
+    #[cfg(feature = "cache")]
     pub(crate) fn update_cache(&self, user_id: u32, username: &crate::prelude::Username) {
         let mut name = username.to_owned();
         name.make_ascii_lowercase();
