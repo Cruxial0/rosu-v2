@@ -474,7 +474,6 @@ pub(crate) struct OsuInner {
     pub(crate) cache: dashmap::DashMap<crate::prelude::Username, u32>,
 }
 
-#[cfg(feature = "cache")]
 impl OsuInner {
     pub(crate) fn new(
         client_id: Option<u64>,
